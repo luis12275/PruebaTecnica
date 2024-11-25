@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model codigo {
+  id_codigo Int     @id @default(autoincrement())
+  codigo    String? @db.VarChar(200)
+}
+
+model formulario {
+  id_formulario      Int      @id @default(autoincrement())
+  nombre_completo    String?  @db.VarChar(200)
+  correo_electronico String?  @db.VarChar(200)
+  estado_origen      String?  @db.VarChar(100)
+  numero_asociado    String?  @db.VarChar(50)
+  telefono_contacto  String?  @db.VarChar(20)
+  plaza_28           Boolean? @default(false)
+  plaza_29           Boolean? @default(false)
+  laboratorio_29     Boolean? @default(false)
+  comentario         String?  @db.VarChar(1000)
+  codigo             String?  @db.VarChar(200)
+  universidad        String?  @db.VarChar(200)
+  tipoUsuario        String?  @db.VarChar(200)
+}
