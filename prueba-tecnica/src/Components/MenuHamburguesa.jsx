@@ -12,7 +12,7 @@ const MenuHamburguesa = (props) => {
       console.log('los datos es ', open)
     };
   
-    const menuItems = ["Usuarios", "Habilidades"];
+    const menuItems = ["Usuarios", ""];
   
     const opcionMenu=(opcion)=>{
         console.log('los datos es ', opcion)

@@ -11,12 +11,15 @@ import {
   NavLink
 } from "react-router-dom";
 import MenuHamburguesa from './Components/MenuHamburguesa';
+import {  useSelector } from 'react-redux'
 
 function App() {
+  const login = useSelector(store => store.Usuario.login)
   
   return (
     <Router>
-      <MenuHamburguesa/>
+      {login?.login?.id && <MenuHamburguesa/>}
+      
 
       <Switch>
         <Route  path='/'  exact component={LoginComponent}/>

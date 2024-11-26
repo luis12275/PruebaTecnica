@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Modal from '@mui/material/Modal';
 import { Formik, Form, Field, FieldArray } from "formik";
+import { useDispatch, useSelector } from 'react-redux'
 import {
     TextField,
     Button,
@@ -12,12 +13,16 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Checkbox,
+    ListItemText,
     Typography,
     IconButton,
     InputAdornment,
 } from "@mui/material";
+import * as Yup from 'yup';
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { agregarUsuario, obtenerEscolaridad, obtenerHabilidades, obtenerUsuarios } from '../redux/UsuriosDuck';
 const style = {
     position: 'absolute',
     top: '50%',
@@ -29,23 +34,42 @@ const style = {
     boxShadow: 24,
     p: 4,
 };
-import * as Yup from "yup";
+export const validationSchema = Yup.object().shape({
+    curp: Yup.string()
+        .required('El CURP es obligatorio')
+        .matches(/^[A-Z0-9]{18}$/, 'CURP inválido'),
+    nombre: Yup.string().required('El nombre es obligatorio'),
+    direccion: Yup.string().required('La dirección es obligatoria'),
+    fechaNacimiento: Yup.date().required('La fecha de nacimiento es obligatoria'),
+    escolaridad: Yup.string().required('El nivel de escolaridad es obligatorio'),
+    skills: Yup.array()
+        .of(Yup.string().required('La habilidad no puede estar vacía'))
+        .min(1, 'Agrega al menos una habilidad'),
+    photo: Yup.mixed().required('Se requiere una foto'),
+    correoElectronico: Yup.string()
+        .email('Debe ser un correo electrónico válido') // Mensaje de error personalizado
+        .required('El correo es obligatorio'),
+});
 function UsuariosComponent() {
+    const dispatch = useDispatch()
 
-    const levelsOfEducation = [
-        "Primaria",
-        "Secundaria",
-        "Preparatoria",
-        "Universidad",
-      ];
+    const escolaridad = useSelector(store => store.Usuario.escolaridad)
+    const habilidades = useSelector(store => store.Usuario.habilidades)
+    const usuarios = useSelector(store => store.Usuario.usuarios)
+
+    console.log('habilidades ', habilidades)
+    console.log('escolaridad ', escolaridad)
+    console.log('usuarios ', usuarios)
+
     const columns = [
-        { field: 'id', headerName: 'ID', headerAlign: 'center', width: 350, sortable: false },
-        { field: 'nombre', headerName: 'Nombre', headerAlign: 'center', width: 350, sortable: false },
-        {
-            field: 'curp', headerName: 'Curp', headerAlign: 'center', width: 620, sortable: false
-        },
-        {
-            field: 'accion', headerName: 'Acción', headerAlign: 'center', width: 100, sortable: false,
+        { field: 'id', headerName: 'ID', headerAlign: 'center', flex: .2, sortable: false },
+        { field: 'nombre', headerName: 'Nombre', headerAlign: 'center', flex: 1, sortable: false },
+        { field: 'curp', headerName: 'Curp', headerAlign: 'center', flex: 1, sortable: false },
+        { field: 'direccion', headerName: 'Dirección', headerAlign: 'center', flex: 1, sortable: false },
+        { field: 'escolaridad', headerName: 'Escolaridad', headerAlign: 'center', flex: 1, sortable: false },
+        { field: 'habilidades', headerName: 'Habilidades', headerAlign: 'center', flex: 1, sortable: false },
+        /*{
+            field: 'accion', headerName: 'Acción', headerAlign: 'center', flex: .5, sortable: false,
             renderCell: (params) =>
             (
                 <div>
@@ -53,19 +77,23 @@ function UsuariosComponent() {
                     <button className={'btn btn-outline-danger ms-2'}>X</button>
                 </div>
             )
-        },
+        },*/
     ]
-    const rows = [
-        { id: 1, nombre: 'Snow', curp: 'Jon' },
-        { id: 2, nombre: 'Lannister', curp: 'Cersei' },
-        { id: 3, nombre: 'Lannister', curp: 'Jaime', age: 31 },
-        { id: 4, nombre: 'Stark', curp: 'Arya', age: 11 },
-        { id: 5, nombre: 'Targaryen', curp: 'Daenerys', age: null },
-        { id: 6, nombre: 'Melisandre', curp: null, age: 150 },
-        { id: 7, nombre: 'Clifford', curp: 'Ferrara', age: 44 },
-        { id: 8, nombre: 'Frances', curp: 'Rossini', age: 36 },
-        { id: 9, nombre: 'Roxie', curp: 'Harvey', age: 65 },
-    ];
+    const rows = [];
+
+    usuarios?.map(anexo => {
+        rows.push({
+            id: anexo.id, nombre: anexo.nombre, curp: anexo.curp, direccion: anexo.direccion,
+            escolaridad: anexo.escolaridad.nivel, habilidades: anexo.usuario_habilidades?.map(item => item.habilidades.habilidad).join(', ')
+        })
+
+    })
+
+    React.useEffect(() => {
+        dispatch(obtenerEscolaridad())
+        dispatch(obtenerHabilidades())
+        dispatch(obtenerUsuarios())
+    }, [])
 
     const [openModal, setOpenModal] = React.useState(false);
     const handleOpenModal = () => {
@@ -76,203 +104,188 @@ function UsuariosComponent() {
         setOpenModal(false)
     }
     const initialValues = {
+        nombre: "",
         curp: "",
-        name: "",
-        address: "",
-        birthDate: "",
-        educationLevel: "",
-        skills: [""],
+        direccion: "",
+        fechaNacimiento: "",
+        correoElectronico: '',
+        contrasena: "",
+        escolaridad: "",
+        skills: [],
         photo: null,
     };
-    const onSubmit =()=>{
+    const onSubmit = async (values) => {
+        values.listaHabilidades = habilidades
+        console.log('los datos de envio es ', values)
+        await dispatch(agregarUsuario(values))
+        await dispatch(obtenerUsuarios())
 
     }
-    const validationSchema = Yup.object().shape({
-        curp: Yup.string()
-          .matches(/^[A-Z0-9]{18}$/, "CURP inválido, debe tener 18 caracteres")
-          .required("CURP es obligatorio"),
-        name: Yup.string()
-          .matches(/^[a-zA-Z\s]+$/, "Solo se permiten letras")
-          .min(2, "Mínimo 2 caracteres")
-          .max(50, "Máximo 50 caracteres")
-          .required("Nombre es obligatorio"),
-        address: Yup.string().required("La dirección es obligatoria"),
-        birthDate: Yup.date()
-          .required("Fecha de nacimiento es obligatoria")
-          .test(
-            "is-adult",
-            "Debes ser mayor de 18 años",
-            (value) => new Date().getFullYear() - new Date(value).getFullYear() >= 18
-          ),
-        educationLevel: Yup.string()
-          .oneOf(levelsOfEducation, "Selecciona un nivel válido")
-          .required("Nivel de escolaridad es obligatorio"),
-        skills: Yup.array()
-          .of(Yup.string().required("La habilidad no puede estar vacía"))
-          .min(1, "Debes agregar al menos una habilidad"),
-        photo: Yup.mixed()
-          .required("La fotografía es obligatoria")
-          .test(
-            "file-format",
-            "Solo se permiten archivos JPEG o PNG",
-            (value) =>
-              value && ["image/jpeg", "image/png"].includes(value.type)
-          ),
-      });
+
+
+    const CustomField = ({ name, label, type = "text", ...props }) => (
+        <Field
+            name={name}
+            as={TextField}
+            label={label}
+            fullWidth
+            margin="normal"
+            type={type}
+            error={props.touched?.[name] && Boolean(props.errors?.[name])}
+            helperText={props.touched?.[name] && props.errors?.[name]}
+            {...props}
+        />
+    );
     const modalComponent = () => {
         return (
-            <div>
-                <Modal
-                    open={openModal}
-                    onClose={handleCloseModal}
-                    aria-labelledby="modal-modal-title"
-                    aria-describedby="modal-modal-description"
-                >
-                    <Box sx={style}>
-                        <Typography id="modal-modal-description" >
-                            <Formik
-                                initialValues={initialValues}
-                                validationSchema={validationSchema}
-                                onSubmit={(values) => {
-                                    onSubmit(values);
-                                    handleCloseModal();
-                                }}
-                            >
-                                {({ values, setFieldValue, errors, touched }) => (
-                                    <Form>
-                                            {/* CURP */}
-                                            <Field
-                                                name="curp"
-                                                as={TextField}
-                                                label="CURP"
-                                                fullWidth
-                                                margin="normal"
-                                                error={touched.curp && Boolean(errors.curp)}
-                                                helperText={touched.curp && errors.curp}
-                                            />
+            <Modal
+                open={openModal}
+                onClose={handleCloseModal}
+                aria-labelledby="modal-title"
+                aria-describedby="modal-description"
+            >
+                <Box sx={style}>
+                    <Typography id="modal-description">
+                        <Formik
+                            initialValues={initialValues}
+                            validationSchema={validationSchema}
+                            onSubmit={(values) => {
+                                onSubmit(values);
+                                handleCloseModal();
+                            }}
+                        >
+                            {({ values, setFieldValue, errors, touched }) => (
+                                <Form>
+                                    <CustomField
+                                        name="nombre"
+                                        label="Nombre y Apellidos"
+                                        errors={errors}
+                                        touched={touched}
+                                    />
+                                    <CustomField
+                                        name="curp"
+                                        label="CURP"
+                                        errors={errors}
+                                        touched={touched}
+                                    />
 
-                                            {/* Nombre */}
-                                            <Field
-                                                name="name"
-                                                as={TextField}
-                                                label="Nombre y Apellidos"
-                                                fullWidth
-                                                margin="normal"
-                                                error={touched.name && Boolean(errors.name)}
-                                                helperText={touched.name && errors.name}
-                                            />
+                                    <CustomField
+                                        name="direccion"
+                                        label="Dirección"
+                                        errors={errors}
+                                        touched={touched}
+                                    />
+                                    <CustomField
+                                        name="correoElectronico"
+                                        label="Correo"
+                                        errors={errors}
+                                        touched={touched}
+                                    />
+                                    <CustomField
+                                        name="contrasena"
+                                        label="Contraseña"
+                                        errors={errors}
+                                        touched={touched}
+                                    />
+                                    <CustomField
+                                        name="fechaNacimiento"
+                                        label="Fecha de Nacimiento"
+                                        type="date"
+                                        InputLabelProps={{ shrink: true }}
+                                        errors={errors}
+                                        touched={touched}
+                                    />
 
-                                            {/* Dirección */}
-                                            <Field
-                                                name="address"
-                                                as={TextField}
-                                                label="Dirección"
-                                                fullWidth
-                                                margin="normal"
-                                                error={touched.address && Boolean(errors.address)}
-                                                helperText={touched.address && errors.address}
-                                            />
+                                    {/* Select */}
+                                    <Field
+                                        name="escolaridad"
+                                        as={TextField}
+                                        label="Nivel de Escolaridad"
+                                        select
+                                        fullWidth
+                                        margin="normal"
+                                        error={
+                                            touched.escolaridad && Boolean(errors.escolaridad)
+                                        }
+                                        helperText={touched.escolaridad && errors.escolaridad}
+                                    >
+                                        {escolaridad.map((level) => (
+                                            <MenuItem key={level.id} value={level.id}>
+                                                {level.nivel}
+                                            </MenuItem>
+                                        ))}
+                                    </Field>
 
-                                            {/* Fecha de Nacimiento */}
-                                            <Field
-                                                name="birthDate"
-                                                as={TextField}
-                                                label="Fecha de Nacimiento"
-                                                fullWidth
-                                                margin="normal"
-                                                type="date"
-                                                InputLabelProps={{ shrink: true }}
-                                                error={touched.birthDate && Boolean(errors.birthDate)}
-                                                helperText={touched.birthDate && errors.birthDate}
-                                            />
+                                    {/* Habilidades */}
+                                    <Field
+                                        name="skills"
+                                        as={TextField}
+                                        select
+                                        label="Habilidades"
+                                        fullWidth
+                                        margin="normal"
+                                        SelectProps={{
+                                            multiple: true,
+                                            renderValue: (selected) => selected.join(", "),
+                                        }}
+                                        error={touched.skills && Boolean(errors.skills)}
+                                        helperText={touched.skills && errors.skills}
+                                    >
+                                        {habilidades.map((skill) => (
+                                            <MenuItem key={skill.id} value={skill.habilidad}>
+                                                <Checkbox checked={values.skills.includes(skill.habilidad)} />
+                                                <ListItemText primary={skill.habilidad} />
+                                            </MenuItem>
+                                        ))}
+                                    </Field>
 
-                                            {/* Nivel de Escolaridad */}
-                                            <Field
-                                                name="educationLevel"
-                                                as={TextField}
-                                                label="Nivel de Escolaridad"
-                                                select
-                                                fullWidth
-                                                margin="normal"
-                                                error={touched.educationLevel && Boolean(errors.educationLevel)}
-                                                helperText={touched.educationLevel && errors.educationLevel}
-                                            >
-                                                {levelsOfEducation.map((level) => (
-                                                    <MenuItem key={level} value={level}>
-                                                        {level}
-                                                    </MenuItem>
-                                                ))}
-                                            </Field>
+                                    {/* Fotografía */}
+                                    <Typography variant="h6" sx={{ mt: 2 }}>
+                                        Fotografía
+                                    </Typography>
 
-                                            {/* Habilidades */}
-                                            <FieldArray name="skills">
-                                                {({ push, remove }) => (
-                                                    <>
-                                                        <Typography variant="h6">Habilidades</Typography>
-                                                        {values.skills.map((skill, index) => (
-                                                            <div key={index} style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
-                                                                <Field
-                                                                    name={`skills[${index}]`}
-                                                                    as={TextField}
-                                                                    label={`Habilidad ${index + 1}`}
-                                                                    fullWidth
-                                                                    margin="normal"
-                                                                    error={touched.skills?.[index] && Boolean(errors.skills?.[index])}
-                                                                    helperText={touched.skills?.[index] && errors.skills?.[index]}
-                                                                />
-                                                                <IconButton
-                                                                    onClick={() => remove(index)}
-                                                                    disabled={values.skills.length === 1}
-                                                                >
-                                                                    <DeleteIcon />
-                                                                </IconButton>
-                                                            </div>
-                                                        ))}
-                                                        <Button
-                                                            variant="outlined"
-                                                            onClick={() => push("")}
-                                                            startIcon={<AddIcon />}
-                                                        >
-                                                            Agregar Habilidad
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </FieldArray>
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png"
+                                        onChange={(event) =>
+                                            setFieldValue("photo", event.currentTarget.files[0])
+                                        }
+                                    />
+                                    {errors.photo && touched.photo && (
+                                        <Typography color="error">{errors.photo}</Typography>
+                                    )}
 
-                                            {/* Fotografía */}
-                                            <Typography variant="h6" style={{ marginTop: "16px" }}>Fotografía</Typography>
-                                            <input
-                                                type="file"
-                                                accept="image/jpeg,image/png"
-                                                onChange={(event) =>
-                                                    setFieldValue("photo", event.currentTarget.files[0])
-                                                }
-                                            />
-                                            {errors.photo && touched.photo && (
-                                                <Typography color="error">{errors.photo}</Typography>
-                                            )}
-                                    </Form>
-                                )}
-                            </Formik>
-                        </Typography>
-                        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                            <center><strong>¿Desea continuar?</strong></center>
-                        </Typography>
-                        <br />
-                        <div classNameName='row'>
-                            <button className='btn btn-success' style={{ margin: '5%' }} >CONTINUAR</button>
-                            <button className='btn btn-dark ' onClick={() => handleCloseModal()}>CANCELAR</button>
-                        </div>
-                    </Box>
-                </Modal>
-            </div>
+                                    {/* Botones */}
+                                    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
+                                        <Button
+                                            type="submit"
+                                            variant="contained"
+                                            color="success"
+                                            sx={{ mr: 1 }}
+                                        >
+                                            Continuar
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            color="secondary"
+                                            onClick={handleCloseModal}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                    </Box>
+                                </Form>
+                            )}
+                        </Formik>
+                    </Typography>
+                </Box>
+            </Modal>
         )
     }
 
     return (
         <div className='row' style={{ marginTop: '2%' }}>
             <Button variant="outlined" className='row' style={{ display: 'block' }} onClick={() => handleOpenModal()}>Agregar Usuario</Button>
-            <Box sx={{ height: 400, width: '100%', marginTop: '2%' }}>
+            <Box sx={{ height: 600, width: '100%', marginTop: '2%' }}>
                 <DataGrid
                     rows={rows}
                     columns={columns}

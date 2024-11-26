@@ -2,15 +2,15 @@ const prisma = require('../prisma/db.prisma')
 
 class UsuarioHabilidadesService {
     async agregarRelacion(data) {
-        return await prisma.usuario_Habilidades.create({ data });
+        return await prisma.usuario_habilidades.create({ data });
     }
 
     async obtenerRelaciones() {
-        return await prisma.usuario_Habilidades.findMany();
+        return await prisma.usuario_habilidades.findMany();
     }
 
     async eliminarRelacion(idUsuario, idHabilidad) {
-        return await prisma.usuario_Habilidades.delete({
+        return await prisma.usuario_habilidades.delete({
             where: {
                 id_Usuario_id_Habilidad: {
                     id_Usuario: idUsuario,

@@ -3,14 +3,24 @@ import { useHistory } from "react-router-dom";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { TextField, Button, Box, Typography } from "@mui/material";
 import { withRouter } from 'react-router-dom'
-
+import { useDispatch, useSelector } from 'react-redux'
+import { iniciarSesion } from "../redux/UsuriosDuck";
 const LoginComponent = (props) => {
   const history = useHistory();
+  const login = useSelector(store => store.Usuario.login)
+  console.log('los login son  ', login)
 
-  const handleLogin = (values) => {
+  const handleLogin = async (values) => {
     const { email, password } = values;
+    console.log('los datos son  ', values)
+    let credenciales = {
 
-    if (email == "admin@example.com" && password == "password") {
+      correoelectronico: values.email,
+      contrasena: values.password
+    }
+    let resultado = await dispatch(iniciarSesion(credenciales))
+    console.log('los datos de resultado ', resultado)
+    if (resultado.payload) {
       //history.push("/Usuarios");
       props.history.push('/Usuarios')
       window.location.reload();
@@ -18,9 +28,11 @@ const LoginComponent = (props) => {
       alert("Credenciales incorrectas");
     }
   };
+  const dispatch = useDispatch()
 
-  const validate = (values) => {
+  const validate = async (values) => {
     const errors = {};
+
     if (!values.email) {
       errors.email = "El correo electrónico es requerido";
     } else if (!/\S+@\S+\.\S+/.test(values.email)) {
@@ -28,7 +40,7 @@ const LoginComponent = (props) => {
     }
     if (!values.password) {
       errors.password = "La contraseña es requerida";
-    } else if (values.password.length < 6) {
+    } else if (values.password.length < 3) {
       errors.password = "La contraseña debe tener al menos 6 caracteres";
     }
     return errors;

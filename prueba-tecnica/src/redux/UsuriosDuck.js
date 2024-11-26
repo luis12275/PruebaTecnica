@@ -5,31 +5,121 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 /**DATOS INICIALES */
 const dataInicial = {
     data: {},
+    habilidades: [],
+    escolaridad: [],
+    usuarios: [],
+    login: []
 }
 
-const ACTUALIZAR_CLIENTE_EXITO = 'ACTUALIZAR_CLIENTE_EXITO'
-const OBTENER_CLIENTE_POR_ID_LOGIN_EXITO = 'OBTENER_CLIENTE_POR_ID_LOGIN_EXITO'
-const OBTENER_CADENA_PRODUCTIVA_POR_ID_LOGIN_EXITO = 'OBTENER_CADENA_PRODUCTIVA_POR_ID_LOGIN_EXITO'
-const CLIENTE_BY_NUMSOCIO = 'CLIENTE_BY_NUMSOCIO'
 
-export const actualizarCliente = createAsyncThunk(
-    ACTUALIZAR_CLIENTE_EXITO,
-    async (data) => {
+const OBTENER_HABILIDADES_EXITO = 'OBTENER_HABILIDADES_EXITO'
+const OBTENER_ESCOLARIDAD_EXITO = 'OBTENER_ESCOLARIDAD_EXITO'
+const OBTENER_USUARIOS_EXITO = 'OBTENER_USUARIOS_EXITO'
+const AGREGAR_USUARIO_EXITO = 'AGREGAR_USUARIO_EXITO'
+const INICIAR_SESION = 'INICIAR_SESION'
+
+export const obtenerHabilidades = createAsyncThunk(
+    OBTENER_HABILIDADES_EXITO,
+    async () => {
         try {
-            const fullUrl = host + `InformacionValida/actualizarCliente`
-            const res = await axios.put(fullUrl, {data: data})
+            const fullUrl = host + `Habilidades/habilidades`
+            const res = await axios.get(fullUrl)
+            return res.data
+        } catch (error) {
+            console.log(error)
+        }
+    }
+)
+export const obtenerEscolaridad = createAsyncThunk(
+    OBTENER_ESCOLARIDAD_EXITO,
+    async () => {
+        try {
+            const fullUrl = host + `Escolaridad/escolaridad`
+            const res = await axios.get(fullUrl)
+            return res.data
         } catch (error) {
             console.log(error)
         }
     }
 )
 
-export const obtenerClienteByIdLogin = createAsyncThunk(
-    OBTENER_CLIENTE_POR_ID_LOGIN_EXITO,
-    async (idLogin) => {
+export const agregarUsuario = createAsyncThunk(
+    AGREGAR_USUARIO_EXITO,
+    async (data) => {
         try {
-            const fullUrl = host + `InformacionValida/obtenerClienteByIdLogin/${idLogin}`
+
+            const fullUrl = host + `Usuario/usuarios`
+            const fullUrlHabilidad = host + `UsuarioHabilidades/usuario-habilidades`
+            const fullUrlFoto = host + `Usuario/upload`
+            let dataUsuario = {
+                curp: data.curp,
+                nombre: data.nombre,
+                correoelectronico: data.correoElectronico,
+                direccion: data.direccion,
+                fechanacimiento: new Date(data.fechaNacimiento).toISOString(),
+                nivelescolaridad: data.escolaridad,
+                fotografias3: '',
+                contrasena: data.contrasena
+            }
+            const formData = new FormData();
+            formData.append('image', data.photo)
+
+            await axios.post(fullUrlFoto, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+            const res = await axios.post(fullUrl, dataUsuario)
+            console.log('los datos es ', res)
+            console.log('los datos es ', data.skills)
+            for (const i in data.skills) {
+                console.log('skill:', data.skills[Number(i)]); // Corregido: data.skills
+                console.log('lista:', data.listaHabilidades);
+
+                // Filtrando por habilidades
+                let filtro = data.listaHabilidades.filter(anexo => anexo.habilidad === data.skills[Number(i)]);
+                console.log('Los datos del filtro:', filtro);
+
+                if (filtro.length > 0) {
+                    let datahabilidades = {
+                        id_usuario: res.data.id,
+                        id_habilidad: filtro[0].id
+                    };
+
+                    try {
+                        // Enviar datos a la API
+                        const resHabilidad = await axios.post(fullUrlHabilidad, datahabilidades);
+                        console.log('Respuesta de resHabilidad:', resHabilidad.data);
+                    } catch (error) {
+                        console.error('Error al enviar datos:', error.message);
+                    }
+                }
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+)
+
+export const obtenerUsuarios = createAsyncThunk(
+    OBTENER_USUARIOS_EXITO,
+    async () => {
+        try {
+            const fullUrl = host + `Usuario/ObtenerTodosUsuarios`
             const res = await axios.get(fullUrl)
+            return res.data
+        } catch (error) {
+            console.log(error)
+        }
+    }
+)
+export const iniciarSesion = createAsyncThunk(
+    INICIAR_SESION,
+    async (data) => {
+        try {
+
+            const fullUrl = host + `Usuario/iniciarSesion`
+            const res = await axios.post(fullUrl, data)
             return res.data.data
         } catch (error) {
             console.log(error)
@@ -37,40 +127,6 @@ export const obtenerClienteByIdLogin = createAsyncThunk(
     }
 )
 
-export const obtenerCadenaProductivaPorLogin = createAsyncThunk(
-    OBTENER_CADENA_PRODUCTIVA_POR_ID_LOGIN_EXITO,
-    async (idLogin) => {
-        try {
-            const fullUrl = host + `InformacionValida/obtenerCadenaProductivaPorLogin/${idLogin}`
-            const res = await axios.get(fullUrl)
-            if(res.data.data){
-                const cadenaP = {}
-                for (const i in res.data.data.cliente[0]?.actividadcliente) {
-                    const {...actividad} = res.data.data.cliente[0]?.actividadcliente[i]
-                    cadenaP[actividad.tipoactividad.actividad] = true
-                }
-                return cadenaP
-            }
-            return {}
-        } catch (error) {
-            console.log(error)
-        }
-    }
-)
-
-export const getClienteByNumsocio = createAsyncThunk(
-    CLIENTE_BY_NUMSOCIO,
-    async (numerosocio) => {
-        try {
-            const fullUrl = host + `InformacionValida/obtenerClienteConDetalleByNumeroSocio/${numerosocio}`
-            const res = await axios.get(fullUrl)
-            //console.log('Se obtienen los Coches: '+JSON.stringify(res))
-            return res
-        } catch (error) {
-            console.log(error);
-        }
-    }
-)
 
 export const UsuarioSlice = createSlice({
     initialState: dataInicial,
@@ -78,16 +134,21 @@ export const UsuarioSlice = createSlice({
     reducers: {
     },
     extraReducers: {
-        [actualizarCliente.fulfilled] : (state, {payload}) => {
+
+
+        [obtenerEscolaridad.fulfilled]: (state, { payload }) => {
+            state.escolaridad = payload
         },
-        [obtenerClienteByIdLogin.fulfilled] : (state, {payload}) => {
+        [obtenerHabilidades.fulfilled]: (state, { payload }) => {
+            state.habilidades = payload
         },
-        [obtenerCadenaProductivaPorLogin.fulfilled] : (state, {payload}) => {
-            state.cadenaProductiva = payload
+        [obtenerUsuarios.fulfilled]: (state, { payload }) => {
+            state.usuarios = payload
         },
-        [getClienteByNumsocio.fulfilled] : (state, {payload}) => {
-            state.cadenaProductiva = payload
+        [iniciarSesion.fulfilled]: (state, { payload }) => {
+            state.login = payload
         },
+
     },
 })
 

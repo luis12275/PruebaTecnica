@@ -9,7 +9,10 @@ router.get('/usuarios/:id', UsuarioController.obtenerPorId)
 router.put('/usuarios/:id', UsuarioController.actualizar);
 router.delete('/usuarios/:id', UsuarioController.eliminar);
 
+router.get('/ObtenerTodosUsuarios', UsuarioController.obtenerTodosUsuarios);
 
 
 router.post('/upload', upload.single('image'), UsuarioController.uploadImage);
+router.post("/iniciarSesion", UsuarioController.iniciarSesion)
+
 module.exports = router;
